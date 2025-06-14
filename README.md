@@ -1,4 +1,4 @@
-# 🚇 지하철 광고 예측 시스템
+# 🚇 지하철 광고 예측 시스템 (SKKU 2025)
 
 Prophet AI를 활용한 스마트 지하철 광고 전략 수립 웹 애플리케이션
 
@@ -18,8 +18,8 @@ Prophet AI를 활용한 스마트 지하철 광고 전략 수립 웹 애플리�
 
 ### 1. 저장소 클론
 ```bash
-git clone https://github.com/YOUR_USERNAME/subway-ad-predictor.git
-cd subway-ad-predictor
+git clone https://github.com/hyunuk7642/skku2025.git
+cd skku2025
 ```
 
 ### 2. 패키지 설치
@@ -59,7 +59,7 @@ streamlit run predictAD.py
 ├── predictAD.py          # 메인 애플리케이션
 ├── requirements.txt      # 패키지 의존성
 ├── README.md            # 프로젝트 문서
-└── *.csv               # 샘플 데이터 (선택적)
+└── *.csv               # 샘플 데이터
 ```
 
 ## 🤝 기여하기
@@ -76,4 +76,4 @@ streamlit run predictAD.py
 
 ## 📞 문의
 
-프로젝트에 대한 질문이나 제안사항이 있으시면 Issues를 통해 연락해주세요. 
+프로젝트에 대한 질문이나 제안사항이 있으시면 Issues를 통해 연락해주세요.
