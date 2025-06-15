@@ -99,7 +99,17 @@ class StreamlitSubwayPredictor:
             "독립문역", "서대문역", "충정로역", "아현역", "공덕역",
             "마포역", "합정역", "상수역", "광화문역", "을지로3가역",
             "충무로역", "동국대입구역", "약수역", "금고개역", "옥수역",
-            "한남역", "노량진역", "대방역", "신대방역", "구로디지털단지역"
+            "한남역", "노량진역", "대방역", "신대방역", "구로디지털단지역",
+            "수서역", "가락시장역", "문정역", "장지역", "복정역",
+            "서울대입구역", "봉천역", "신림역", "서울역", "용산역",
+            "이촌역", "동작역", "총신대입구역", "남태령역", "선바위역",
+            "경마공원역", "대공원역", "과천역", "정부과천청사역", "인덕원역",
+            "평촌역", "범계역", "금정역", "수원역", "성균관대역",
+            "화서역", "수원시민공원역", "매교역", "수원역", "고색역",
+            # 8호선 추가 역
+            "암사역", "천호역", "강동구청역", "몽촌토성역", "잠실역(8호선)",
+            "석촌역", "송파역", "가락시장역(8호선)", "문정역(8호선)", "장지역(8호선)",
+            "복정역(8호선)", "산성역", "남한산성입구역", "단대오거리역", "신흥역"
         ]
         
         start_date = datetime(2025, 1, 1)
@@ -155,9 +165,9 @@ class StreamlitSubwayPredictor:
             Q3 = station_data['y'].quantile(0.75)
             IQR = Q3 - Q1
             
-            # 이상치 범위를 더 좁게 설정 (1.5 -> 1.0)
-            lower_bound = Q1 - 1.0 * IQR
-            upper_bound = Q3 + 1.0 * IQR
+            # 이상치 범위를 더 넓게 설정 (1.0 -> 1.5)
+            lower_bound = Q1 - 1.5 * IQR
+            upper_bound = Q3 + 1.5 * IQR
             
             outlier_mask = (station_data['y'] >= lower_bound) & (station_data['y'] <= upper_bound)
             clean_data = station_data[outlier_mask].copy()
@@ -215,58 +225,80 @@ class StreamlitSubwayPredictor:
         return True
     
     def analyze_ad_effectiveness(self, selected_stations):
-        """광고 효과 분석"""
+        """광고 효과 분석 (6월, 7월 따로)"""
         results = {}
-        
         for station in selected_stations:
             forecast = self.predictions[station]
-            
             # 5월 평균
             may_data = self.data[
                 (self.data['station'] == station) & 
                 (self.data['ds'] >= datetime(2025, 5, 1)) & 
                 (self.data['ds'] < datetime(2025, 6, 1))
             ]['y'].mean()
-            
-            # 6-7월 예측 평균
+            # 6월 예측 평균
             june_start = datetime(2025, 6, 1)
-            future_data = forecast[forecast['ds'] >= june_start]
-            future_predicted = future_data['yhat'].mean() if len(future_data) > 0 else may_data
-            
-            # 증감률 계산
-            change_rate = ((future_predicted - may_data) / may_data) * 100 if may_data > 0 else 0
-            
-            # 판단 로직
-            if change_rate >= 10:
-                decision = "광고 확대 권장"
-                color = "🟢"
-                emoji = "📈"
-            elif change_rate >= 5:
-                decision = "광고 유지 권장"
-                color = "🟢"
-                emoji = "✅"
-            elif change_rate >= -5:
-                decision = "현상 유지"
-                color = "🟡"
-                emoji = "➡️"
-            elif change_rate >= -10:
-                decision = "광고 축소 고려"
-                color = "🔴"
-                emoji = "⚠️"
+            july_start = datetime(2025, 7, 1)
+            june_data = forecast[(forecast['ds'] >= june_start) & (forecast['ds'] < july_start)]['yhat'].mean()
+            # 7월 예측 평균
+            july_data = forecast[forecast['ds'] >= july_start]['yhat'].mean()
+            # 변화율 계산
+            june_change = ((june_data - may_data) / may_data) * 100 if may_data > 0 else 0
+            july_change = ((july_data - may_data) / may_data) * 100 if may_data > 0 else 0
+            # 판단 로직 (6월)
+            if june_change >= 8:
+                june_decision = "광고 확대 권장"
+                june_color = "💙"
+                june_emoji = "📈"
+            elif june_change >= 5:
+                june_decision = "광고 유지 권장"
+                june_color = "💚"
+                june_emoji = "✅"
+            elif june_change >= 3:
+                june_decision = "현상 유지"
+                june_color = "💛"
+                june_emoji = "➡️"
+            elif june_change >= 0:
+                june_decision = "광고 축소 고려"
+                june_color = "🧡"
+                june_emoji = "⚠️"
             else:
-                decision = "광고 중단 권장"
-                color = "🔴"
-                emoji = "❌"
-            
+                june_decision = "광고 중단 권장"
+                june_color = "❤️"
+                june_emoji = "❌"
+            # 판단 로직 (7월)
+            if july_change >= 8:
+                july_decision = "광고 확대 권장"
+                july_color = "💙"
+                july_emoji = "📈"
+            elif july_change >= 5:
+                july_decision = "광고 유지 권장"
+                july_color = "💚"
+                july_emoji = "✅"
+            elif july_change >= 3:
+                july_decision = "현상 유지"
+                july_color = "💛"
+                july_emoji = "➡️"
+            elif july_change >= 0:
+                july_decision = "광고 축소 고려"
+                july_color = "🧡"
+                july_emoji = "⚠️"
+            else:
+                july_decision = "광고 중단 권장"
+                july_color = "❤️"
+                july_emoji = "❌"
             results[station] = {
                 'may_avg': may_data,
-                'future_avg': future_predicted,
-                'change_rate': change_rate,
-                'decision': decision,
-                'color': color,
-                'emoji': emoji
+                'june_avg': june_data,
+                'july_avg': july_data,
+                'june_change': june_change,
+                'july_change': july_change,
+                'june_decision': june_decision,
+                'june_color': june_color,
+                'june_emoji': june_emoji,
+                'july_decision': july_decision,
+                'july_color': july_color,
+                'july_emoji': july_emoji
             }
-        
         self.ad_results = results
         return results
 
@@ -292,10 +324,48 @@ def main():
         # 데이터 로딩 버튼
         if st.button("📊 데이터 로딩", use_container_width=True):
             with st.spinner("데이터 로딩 중..."):
+                # 월별 진행 상황 표시
+                progress_text = st.empty()
+                
+                # 1월 데이터 생성
+                progress_text.text("> 1월 데이터 생성 중...")
+                time.sleep(0.5)
                 predictor.data = predictor.generate_sample_data()
+                progress_text.text("> 1월 분석 완료!")
+                time.sleep(0.5)
+                
+                # 2월 데이터 생성
+                progress_text.text("> 2월 데이터 생성 중...")
+                time.sleep(0.5)
+                progress_text.text("> 2월 분석 완료!")
+                time.sleep(0.5)
+                
+                # 3월 데이터 생성
+                progress_text.text("> 3월 데이터 생성 중...")
+                time.sleep(0.5)
+                progress_text.text("> 3월 분석 완료!")
+                time.sleep(0.5)
+                
+                # 4월 데이터 생성
+                progress_text.text("> 4월 데이터 생성 중...")
+                time.sleep(0.5)
+                progress_text.text("> 4월 분석 완료!")
+                time.sleep(0.5)
+                
+                # 5월 데이터 생성
+                progress_text.text("> 5월 데이터 생성 중...")
+                time.sleep(0.5)
+                progress_text.text("> 5월 분석 완료!")
+                time.sleep(0.5)
+                
+                # 데이터 정제
+                progress_text.text("> 데이터 정제 중...")
                 predictor.data = predictor.clean_data(predictor.data)
+                time.sleep(0.5)
+                
                 st.session_state.data_loaded = True
-                st.success("✅ 데이터 로딩 완료!")
+                progress_text.text("✅ 데이터 로딩 완료!")
+                time.sleep(1)
                 st.rerun()
         
         st.divider()
@@ -304,11 +374,24 @@ def main():
         if predictor.install_requirements():
             st.success("✅ Prophet 패키지 준비됨")
         
-        # 데이터 정보
+        # 데이터 정보 및 미리보기
         if hasattr(st.session_state, 'data_loaded') and st.session_state.data_loaded:
+            st.subheader("📋 데이터 미리보기")
+            preview_data = predictor.data.head(5)  # 처음 5개 행만 표시
+            st.dataframe(preview_data, use_container_width=True)
+            
+            st.subheader("📊 데이터 통계")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("총 데이터 수", f"{len(predictor.data):,}개")
+                st.metric("총 역 수", f"{len(predictor.data['station'].unique()):,}개")
+            with col2:
+                st.metric("평균 유동인구", f"{int(predictor.data['y'].mean()):,}명")
+                st.metric("최대 유동인구", f"{int(predictor.data['y'].max()):,}명")
+            
             st.info(f"📅 데이터 기간: 2025.01.01 ~ 2025.05.31")
-            st.info(f"🚇 총 {len(predictor.data['station'].unique())}개 역")
-            st.info(f"📊 총 {len(predictor.data):,}개 데이터 포인트")
+        else:
+            st.info("👈 먼저 '데이터 로딩' 버튼을 클릭해주세요!")
     
     # 메인 콘텐츠
     if not hasattr(st.session_state, 'data_loaded'):
@@ -328,21 +411,21 @@ def main():
         
         with col1:
             selected_stations = st.multiselect(
-                "5개 지하철역을 선택해주세요:",
+                "1~10개 지하철역을 선택해주세요:",
                 available_stations,
                 placeholder="역을 선택하세요...",
-                help="정확히 5개의 역을 선택해야 분석이 진행됩니다."
+                help="1개 이상 10개 이하의 역을 선택해주세요."
             )
         
         with col2:
-            st.metric("선택된 역", f"{len(selected_stations)}/5")
+            st.metric("선택된 역", f"{len(selected_stations)}/10")
             
-            if len(selected_stations) == 5:
-                st.success("✅ 선택 완료!")
-            elif len(selected_stations) > 5:
-                st.error("❌ 5개까지만 선택 가능!")
+            if len(selected_stations) > 10:
+                st.error("❌ 10개까지만 선택 가능!")
+            elif len(selected_stations) == 0:
+                st.info("ℹ️ 최소 1개 이상의 역을 선택하세요")
             else:
-                st.info(f"ℹ️ {5-len(selected_stations)}개 더 선택하세요")
+                st.success(f"✅ {len(selected_stations)}개 역 선택 완료!")
         
         # 선택된 역 표시
         if selected_stations:
@@ -357,7 +440,7 @@ def main():
                     """, unsafe_allow_html=True)
         
         # 분석 실행
-        if len(selected_stations) == 5:
+        if len(selected_stations) > 0 and len(selected_stations) <= 10:
             if st.button("🤖 AI 분석 시작", use_container_width=True, type="primary"):
                 
                 # 진행 상태 표시
@@ -401,38 +484,26 @@ def main():
         st.header("📊 광고 효과 분석 결과")
         
         # 결과 카드 표시
-        for i, station in enumerate(st.session_state.selected_stations):
+        for i, station in enumerate(st.session_state.selected_stations, 1):
             result = predictor.ad_results[station]
-            
-            col1, col2, col3, col4 = st.columns([1, 1, 1, 2])
-            
+            # 역명 카드(한 줄 전체)
+            st.markdown(f"""
+            <div class="metric-card" style="margin-top: 1rem; margin-bottom: 1.5rem; font-size:2.5rem; text-align:left;">
+                🚇 <b>{station}</b>
+            </div>
+            """, unsafe_allow_html=True)
+            # 5개 컬럼 한 줄
+            col1, col2, col3, col4, col5 = st.columns([1, 1, 1, 1.5, 1.5])
             with col1:
-                st.metric(
-                    "5월 평균",
-                    f"{int(result['may_avg']):,}명"
-                )
-            
+                st.metric("5월 평균", f"{int(result['may_avg']):,}명")
             with col2:
-                st.metric(
-                    "6-7월 예측",
-                    f"{int(result['future_avg']):,}명",
-                    f"{result['change_rate']:+.1f}%"
-                )
-            
+                st.metric("6월 예측", f"{int(result['june_avg']):,}명", f"{result['june_change']:+.1f}%")
             with col3:
-                st.metric(
-                    "변화율",
-                    f"{result['change_rate']:+.1f}%"
-                )
-            
+                st.metric("7월 예측", f"{int(result['july_avg']):,}명", f"{result['july_change']:+.1f}%")
             with col4:
-                st.markdown(f"""
-                <div class="metric-card">
-                    <h3>{result['emoji']} {station}</h3>
-                    <h4>{result['color']} {result['decision']}</h4>
-                </div>
-                """, unsafe_allow_html=True)
-            
+                st.metric("6월 광고", f"{result['june_emoji']} {result['june_decision']}")
+            with col5:
+                st.metric("7월 광고", f"{result['july_emoji']} {result['july_decision']}")
             st.divider()
     
     with tab3:
@@ -442,11 +513,19 @@ def main():
         
         st.header("📈 시각화")
         
-        # 차트 생성
+        # 선택된 역의 개수에 따라 subplot 생성
+        num_stations = len(st.session_state.selected_stations)
+        # vertical_spacing을 역 개수에 따라 조정
+        if num_stations <= 5:
+            vertical_spacing = 0.15
+        elif num_stations <= 10:
+            vertical_spacing = 0.05
+        else:
+            vertical_spacing = 0.02
         fig = make_subplots(
-            rows=5, cols=1,
+            rows=num_stations, cols=1,
             subplot_titles=[f"🚇 {station}" for station in st.session_state.selected_stations],
-            vertical_spacing=0.15
+            vertical_spacing=vertical_spacing
         )
         
         for i, station in enumerate(st.session_state.selected_stations):
@@ -490,7 +569,7 @@ def main():
         # 레이아웃 설정
         fig.update_layout(
             title="🚇 지하철역별 유동인구 추이 및 예측",
-            height=1800,
+            height=300 * num_stations,  # 역 개수에 따라 높이 조정
             showlegend=True,
             legend=dict(x=0.85, y=1.0)
         )
@@ -505,14 +584,18 @@ def main():
         st.subheader("📋 결과 요약")
         
         summary_data = []
-        for station in st.session_state.selected_stations:
+        for i, station in enumerate(st.session_state.selected_stations, 1):
             result = predictor.ad_results[station]
             summary_data.append({
+                '순번': i,
                 '역명': station,
                 '5월평균': f"{int(result['may_avg']):,}명",
-                '6-7월예측': f"{int(result['future_avg']):,}명",
-                '변화율': f"{result['change_rate']:+.1f}%",
-                '판단': f"{result['emoji']} {result['decision']}"
+                '6월예측': f"{int(result['june_avg']):,}명",
+                '7월예측': f"{int(result['july_avg']):,}명",
+                '6월변화율': f"{result['june_change']:+.1f}%",
+                '7월변화율': f"{result['july_change']:+.1f}%",
+                '6월판단': f"{result['june_emoji']} {result['june_decision']}",
+                '7월판단': f"{result['july_emoji']} {result['july_decision']}"
             })
         
         summary_df = pd.DataFrame(summary_data)
